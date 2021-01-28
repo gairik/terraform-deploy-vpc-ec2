@@ -16,11 +16,10 @@ tags = {
 }
 } # end resource
 
-# create the Subnet 1
-resource "aws_subnet" "My_VPC_terraform_Subnet" {
-  count                   = "${length(var.subnetCIDRblock)}"
+# create public Subnet 
+resource "aws_subnet" "My_VPC_terraform_Subnet_public" {
   vpc_id                  = aws_vpc.My_VPC_terraform.id
-  cidr_block              = "${var.subnetCIDRblock[count.index]}"
+  cidr_block              = "${var.subnetCIDRblock[0]}"
   map_public_ip_on_launch = var.mapPublicIP 
   availability_zone       = var.availabilityZone[0]
 tags = {
@@ -28,6 +27,29 @@ tags = {
 }
 } # end resource
 
+
+# create private Subnet 1 
+resource "aws_subnet" "My_VPC_terraform_Subnet_private1" {
+  vpc_id                  = aws_vpc.My_VPC_terraform.id
+  cidr_block              = "${var.subnetCIDRblock[1]}"
+  map_public_ip_on_launch = var.mapPublicIP 
+  availability_zone       = var.availabilityZone[0]
+tags = {
+   Name = "My VPC Subnet"
+}
+} # end resource
+
+
+# create private Subnet 2
+resource "aws_subnet" "My_VPC_terraform_Subnet_private2" {
+  vpc_id                  = aws_vpc.My_VPC_terraform.id
+  cidr_block              = "${var.subnetCIDRblock[2]}"
+  map_public_ip_on_launch = var.mapPublicIP 
+  availability_zone       = var.availabilityZone[0]
+tags = {
+   Name = "My VPC Subnet"
+}
+} # end resource
 
 # Create the Security Group
 resource "aws_security_group" "My_VPC_terraform_Security_Group" {
@@ -80,9 +102,18 @@ resource "aws_route" "My_VPC_terraform_internet_access" {
 
 # Associate the Route Table with the Subnet
 resource "aws_route_table_association" "My_VPC_terraform_association" {
-  count          = "${length(var.subnetCIDRblock)}"
-  subnet_id      = "${element(aws_subnet.My_VPC_terraform_Subnet.*.id, count.index)}"
+  subnet_id      = aws_subnet.My_VPC_terraform_Subnet_public.id
   route_table_id = aws_route_table.My_VPC_terraform_route_table.id
 } # end resource
 # end vpc.tf
 
+resource "aws_instance" "terraform_ec2" {
+  ami           = var.ec2AMI
+  instance_type = "t2.micro"
+  subnet_id = aws_subnet.My_VPC_terraform_Subnet_public.id
+  key_name = "ansible-3"
+  user_data = "${file("script.sh")}"
+  tags = {
+    Name = "public ec2 terraform"
+  }
+}
